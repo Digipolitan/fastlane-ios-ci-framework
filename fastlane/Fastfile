@@ -5,11 +5,15 @@ desc "####How to install ?"
 desc "This lane require the `tests` lane define in [Digipolitan/fastlane-ios-common](https://github.com/Digipolitan/fastlane-ios-common)"
 desc "```\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-ios-common'\n)\n```"
 desc "####Options"
-desc " * **workspace**: The workspace to use."
+desc "* **workspace**: The workspace to use."
 desc "  * **environment_variable**: DG_WORKSPACE"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc " * **project**: The project to use."
+desc "* **name**: The framework name."
+desc "  * **environment_variable**: DG_FRAMEWORK_NAME"
+desc "  * **type**: string"
+desc "  * **optional**: true"
+desc "* **project**: The project to use."
 desc "  * **environment_variable**: DG_PROJECT"
 desc "  * **type**: string"
 desc "  * **optional**: true"
@@ -21,18 +25,22 @@ desc "* **skip_slack**: Skip slack notification even if a SLACK_URL is define."
 desc "  * **type**: boolean"
 desc "  * **optional**: true"
 desc "  * **default_value**: false"
+desc "####Environment variables"
+desc "* **SLACK_URL**: The slack Hook URL"
+desc "  * **type**: string"
+desc "  * **optional**: true"
 desc ""
 lane :travis_framework_tests do |options|
   if ENV['TRAVIS'] == nil
     UI.user_error! "Only travis can run this lane"
   end
+  project = options[:project] != nil ? options[:project] : ENV['DG_PROJECT']
   if options[:skip_slack] != true
     slack(
       message: "Starting framework CI",
       payload: {
-        "Project" => read_podspec()['name'],
-        "Git Branch" => ENV['TRAVIS_BRANCH'],
-        "Version" => get_version_number(),
+        "Git Branch" => git_branch(),
+        "Version" => get_version_number(xcodeproj: project),
         "Build By" => "Travis"
       },
       default_payloads: [:git_author]
@@ -40,7 +48,7 @@ lane :travis_framework_tests do |options|
   end
   tests(
     workspace: options[:workspace],
-    project: options[:project],
+    project: project,
     scheme: options[:scheme],
     skip_slack: options[:skip_slack],
     clean: true
@@ -53,16 +61,21 @@ desc "After that only for the **master branch**, deploy framework to **github** 
 desc "####How to install ?"
 desc "This lane require the `coverage` lane define in [Digipolitan/fastlane-ios-common](https://github.com/Digipolitan/fastlane-ios-common)"
 desc "```\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-ios-common'\n)\n```"
+desc "This lane require :"
+desc "- `framework_deploy_github` lane **if github_repository_name != nil**"
+desc "- `framework_deploy_cocoapods` lane **if skip_cocoapods != true**"
+desc "Define in [Digipolitan/fastlane-ios-framework](https://github.com/Digipolitan/fastlane-ios-framework)"
+desc "```\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-ios-framework'\n)\n```"
 desc "####Options"
 desc "* **github_repository_name**: The GitHub repository name such as 'company/project'"
-desc "  * **environment_variable**: GITHUB_REPOSITORY_NAME"
+desc "  * **environment_variable**: DG_GITHUB_REPOSITORY_NAME"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc " * **workspace**: The workspace to use."
+desc "* **workspace**: The workspace to use."
 desc "  * **environment_variable**: DG_WORKSPACE"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc " * **project**: The project to use."
+desc "* **project**: The project to use."
 desc "  * **environment_variable**: DG_PROJECT"
 desc "  * **type**: string"
 desc "  * **optional**: true"
@@ -74,6 +87,18 @@ desc "* **skip_slack**: Skip slack notification even if a SLACK_URL is define."
 desc "  * **type**: boolean"
 desc "  * **optional**: true"
 desc "  * **default_value**: false"
+desc "* **skip_cocoapods**: Skip cocoapods deployment"
+desc "  * **type**: boolean"
+desc "  * **optional**: true"
+desc "  * **default_value**: false"
+desc "* **skip_carthage**: Skip carthage deployment"
+desc "  * **type**: boolean"
+desc "  * **optional**: true"
+desc "  * **default_value**: false"
+desc "####Environment variables"
+desc "* **SLACK_URL**: The slack Hook URL"
+desc "  * **type**: string"
+desc "  * **optional**: true"
 desc ""
 lane :travis_framework_after_success_action do |options|
   if ENV['TRAVIS'] == nil
@@ -85,87 +110,39 @@ lane :travis_framework_after_success_action do |options|
     scheme: options[:scheme],
     skip_slack: options[:skip_slack]
   )
-  if ENV['TRAVIS_BRANCH'] == "master"
-    travis_framework_deploy_github(
-      github_repository_name: options[:github_repository_name],
-      skip_slack: options[:skip_slack]
-    )
-  end
-end
+  if git_branch() == "master"
+    notification_payload = {
+      "Git Branch" => ENV['TRAVIS_BRANCH'],
+      "Build By" => "Travis"
+    }
+    if options[:skip_carthage] != true
+      carthage(
+        command: "build",
+        platform: "all",
+        no_skip_current: true
+      )
+    end
+    github_repository_name = options[:github_repository_name] != nil ? options[:github_repository_name] : ENV["DG_GITHUB_REPOSITORY_NAME"]
+    if github_repository_name != nil
+      framework_deploy_github(
+        repository_name: github_repository_name,
+        skip_carthage: options[:skip_carthage]
+      )
+      notification_payload["GitHub Release"] = lane_context[:SET_GITHUB_RELEASE_HTML_LINK]
+    end
+    if options[:skip_cocoapods] != true
+      framework_deploy_cocoapods(
+        podspec_path: options[:podspec_path] != nil ? options[:podspec_path] : ENV['DG_PODSPEC_PATH']
+      )
+      notification_payload["CocoaPods"] = lane_context[:DG_COCOAPODS_RELEASE_LINK]
+    end
 
-desc "Travis GitHub deployment lane"
-desc "This lane must be run only on the **master** branch"
-desc "####Options"
-desc "* **github_repository_name**: The GitHub repository name such as 'company/project'"
-desc "  * **environment_variable**: GITHUB_REPOSITORY_NAME"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc "* **skip_slack**: Skip slack notification even if a SLACK_URL is define."
-desc "  * **type**: boolean"
-desc "  * **optional**: true"
-desc "  * **default_value**: false"
-desc "####Environment variables"
-desc "* **GITHUB_TOKEN**: The GitHub access token use to push the release to GitHub, check how to generate access token [here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/)"
-desc "  * **type**: string"
-desc "  * **optional**: false"
-desc "* **COCOAPODS_TRUNK_TOKEN**: The CocoaPods access token use to push the release to CocoaPods, check below how to retrieve CocoaPods token"
-desc "  * **type**: string"
-desc "  * **optional**: false"
-desc "####How to pass environement variable to Travis"
-desc "Take a look to the Travis [documentation](https://docs.travis-ci.com/user/environment-variables/)"
-desc "####How to retrieve CocoaPods Trunk Token ?"
-desc "First setup your CocoaPods trunk [as follow](https://guides.cocoapods.org/making/getting-setup-with-trunk.html)"
-desc "After that run this command :"
-desc "```\ngrep -A2 'trunk.cocoapods.org' ~/.netrc\n```"
-desc "The output sould be something like this :"
-desc "```\nmachine trunk.cocoapods.org\n  login user@example.com\n  password XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n```"
-desc "The password `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` is your CocoaPods trunk token"
-desc ""
-lane :travis_framework_deploy_github do |options|
-  if ENV['TRAVIS'] == nil
-    UI.user_error! "Only travis can run this lane"
-  end
-  if ENV['TRAVIS_BRANCH'] != "master"
-    UI.user_error! "This lane must be run on the master branch"
-  end
-  if ENV['GITHUB_TOKEN'] == nil
-    UI.user_error! "You must register ENV[GITHUB_TOKEN] to the travis environement to publish the release version on GitHub"
-  end
-  if ENV['COCOAPODS_TRUNK_TOKEN'] == nil
-    UI.user_error! "You must register ENV[COCOAPODS_TRUNK_TOKEN] to the travis environement to publish the release version on CocoaPods"
-  end
-  github_repository_name = options[:github_repository_name] != nil ? options[:github_repository_name] : ENV['GITHUB_REPOSITORY_NAME']
-  if github_repository_name == nil
-    UI.user_error! "Missing required parameter 'github_repository_name' ENV[GITHUB_REPOSITORY_NAME]"
-  end
-  version_number = get_version_number()
-  tag_name = "v#{version_number}"
-  set_github_release(
-    repository_name: github_repository_name,
-    name: version_number,
-    api_token: ENV['GITHUB_TOKEN'],
-    tag_name: tag_name,
-    description: changelog_from_git_commits(),
-    commitish: "master"
-  )
-  pod_push(
-    allow_warnings: true,
-    verbose: true
-  )
-  if options[:skip_slack] != true
-    pod_name = read_podspec()['name']
-    slack(
-      message: "Successfully distributed framework CI",
-      payload: {
-        "Project" => pod_name,
-        "Github" => "https://github.com/#{github_repository_name}",
-        "Git Branch" => ENV['TRAVIS_BRANCH'],
-        "Version" => version_number,
-        "Release" => "https://github.com/#{github_repository_name}/releases/tag/#{tag_name}",
-        "CocoaPods" => "https://cocoapods.org/pods/#{pod_name}",
-        "Build By" => "Travis"
-      },
-      default_payloads: []
-    )
+    if options[:skip_slack] != true
+      slack(
+        message: "Successfully distributed framework CI",
+        payload: notification_payload,
+        default_payloads: []
+      )
+    end
   end
 end

@@ -29,7 +29,7 @@ import_from_git(
 
 ####Options
 
- * **workspace**: The workspace to use.
+* **workspace**: The workspace to use.
 
   * **environment_variable**: DG_WORKSPACE
 
@@ -37,7 +37,15 @@ import_from_git(
 
   * **optional**: true
 
- * **project**: The project to use.
+* **name**: The framework name.
+
+  * **environment_variable**: DG_FRAMEWORK_NAME
+
+  * **type**: string
+
+  * **optional**: true
+
+* **project**: The project to use.
 
   * **environment_variable**: DG_PROJECT
 
@@ -60,6 +68,14 @@ import_from_git(
   * **optional**: true
 
   * **default_value**: false
+
+####Environment variables
+
+* **SLACK_URL**: The slack Hook URL
+
+  * **type**: string
+
+  * **optional**: true
 
 
 ### travis_framework_after_success_action
@@ -82,17 +98,31 @@ import_from_git(
 )
 ```
 
+This lane require :
+
+- `framework_deploy_github` lane **if github_repository_name != nil**
+
+- `framework_deploy_cocoapods` lane **if skip_cocoapods != true**
+
+Define in [Digipolitan/fastlane-ios-framework](https://github.com/Digipolitan/fastlane-ios-framework)
+
+```
+import_from_git(
+  url: 'https://github.com/Digipolitan/fastlane-ios-framework'
+)
+```
+
 ####Options
 
-* **github_repository_name**: The github repository name such as 'company/project'
+* **github_repository_name**: The GitHub repository name such as 'company/project'
 
-  * **environment_variable**: GITHUB_REPOSITORY_NAME
+  * **environment_variable**: DG_GITHUB_REPOSITORY_NAME
 
   * **type**: string
 
   * **optional**: true
 
- * **workspace**: The workspace to use.
+* **workspace**: The workspace to use.
 
   * **environment_variable**: DG_WORKSPACE
 
@@ -100,7 +130,7 @@ import_from_git(
 
   * **optional**: true
 
- * **project**: The project to use.
+* **project**: The project to use.
 
   * **environment_variable**: DG_PROJECT
 
@@ -124,26 +154,15 @@ import_from_git(
 
   * **default_value**: false
 
+* **skip_cocoapods**: Skip cocoapods deployment
 
-### travis_framework_deploy_github
-```
-fastlane travis_framework_deploy_github
-```
-Travis github deployment lane
-
-This lane must be run only on the **master** branch
-
-####Options
-
-* **github_repository_name**: The github repository name such as 'company/project'
-
-  * **environment_variable**: GITHUB_REPOSITORY_NAME
-
-  * **type**: string
+  * **type**: boolean
 
   * **optional**: true
 
-* **skip_slack**: Skip slack notification even if a SLACK_URL is define.
+  * **default_value**: false
+
+* **skip_carthage**: Skip carthage deployment
 
   * **type**: boolean
 
@@ -153,41 +172,11 @@ This lane must be run only on the **master** branch
 
 ####Environment variables
 
-* **GITHUB_TOKEN**: The GitHub access token use to push the release to GitHub, check how to generate access token [here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/)
+* **SLACK_URL**: The slack Hook URL
 
   * **type**: string
 
-  * **optional**: false
-
-* **COCOAPODS_TRUNK_TOKEN**: The CocoaPods access token use to push the release to CocoaPods, check below to retrieve CocoaPods token
-
-  * **type**: string
-
-  * **optional**: false
-
-####How to pass environement variable to Travis
-
-Take a look to the Travis [documentation](https://docs.travis-ci.com/user/environment-variables/)
-
-####How to retrieve CocoaPods Trunk Token ?
-
-First setup your CocoaPods trunk [as follow](https://guides.cocoapods.org/making/getting-setup-with-trunk.html)
-
-After that run this command :
-
-```
-grep -A2 'trunk.cocoapods.org' ~/.netrc
-```
-
-The output sould be something like this :
-
-```
-machine trunk.cocoapods.org
-  login user@example.com
-  password XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-```
-
-The password 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' is your CocoaPods trunk token
+  * **optional**: true
 
 
 
