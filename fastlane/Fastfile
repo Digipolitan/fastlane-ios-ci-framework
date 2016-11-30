@@ -35,6 +35,7 @@ lane :travis_framework_tests do |options|
     UI.user_error! "Only travis can run this lane"
   end
   project = options[:project] != nil ? options[:project] : ENV['DG_PROJECT']
+  cocoapods()
   if options[:skip_slack] != true
     slack(
       message: "Starting framework CI",
