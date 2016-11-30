@@ -34,14 +34,19 @@ lane :travis_framework_tests do |options|
   if ENV['TRAVIS'] == nil
     UI.user_error! "Only travis can run this lane"
   end
-  project = options[:project] != nil ? options[:project] : ENV['DG_PROJECT']
+  prepare_lane_options(
+    options: options,
+    mapping: {
+      :project => {:env_var => "DG_PROJECT"}
+    }
+  )
   cocoapods()
   if options[:skip_slack] != true
     slack(
       message: "Starting framework CI",
       payload: {
         "Git Branch" => git_branch(),
-        "Version" => get_version_number(xcodeproj: project),
+        "Version" => get_version_number(xcodeproj: options[:project]),
         "Build By" => "Travis"
       },
       default_payloads: [:git_author]
@@ -49,7 +54,7 @@ lane :travis_framework_tests do |options|
   end
   tests(
     workspace: options[:workspace],
-    project: project,
+    project: options[:project],
     scheme: options[:scheme],
     skip_slack: options[:skip_slack],
     clean: true
@@ -105,9 +110,19 @@ lane :travis_framework_after_success_action do |options|
   if ENV['TRAVIS'] == nil
     UI.user_error! "Only travis can run this lane"
   end
-  if git_branch() == "master"
+  branch = git_branch()
+  if branch == "master"
+    prepare_lane_options(
+      options: options,
+      mapping: {
+        :github_repository_name => {:env_var => "GITHUB_REPOSITORY_NAME"},
+        :github_token => {:env_var => "GITHUB_TOKEN"},
+        :podspec_path => {:env_var => "DG_PODSPEC_PATH"},
+        :project => {:env_var => "DG_PROJECT"}
+      }
+    )
     notification_payload = {
-      "Git Branch" => ENV['TRAVIS_BRANCH'],
+      "Git Branch" => branch,
       "Build By" => "Travis"
     }
     if options[:skip_carthage] != true
@@ -117,17 +132,17 @@ lane :travis_framework_after_success_action do |options|
         no_skip_current: true
       )
     end
-    github_repository_name = options[:github_repository_name] != nil ? options[:github_repository_name] : ENV["DG_GITHUB_REPOSITORY_NAME"]
-    if github_repository_name != nil
+    if options[:github_repository_name] != nil
       framework_deploy_github(
-        repository_name: github_repository_name,
+        token: options[:github_token],
+        repository_name: options[:github_repository_name],
+        project: options[:project],
         skip_carthage: options[:skip_carthage]
       )
       notification_payload["GitHub Release"] = lane_context[:SET_GITHUB_RELEASE_HTML_LINK]
     end
     if options[:skip_cocoapods] != true
-      podspec_path = options[:podspec_path] != nil ? options[:podspec_path] : ENV['DG_PODSPEC_PATH']
-      framework_deploy_cocoapods(podspec_path: podspec_path)
+      framework_deploy_cocoapods(podspec_path: options[:podspec_path])
       notification_payload["CocoaPods"] = lane_context[:DG_COCOAPODS_RELEASE_LINK]
     end
 
