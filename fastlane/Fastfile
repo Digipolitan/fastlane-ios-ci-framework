@@ -40,7 +40,9 @@ lane :travis_framework_tests do |options|
       :project => {:env_var => "DG_PROJECT"}
     }
   )
-  cocoapods()
+  if File.exist?("Podfile")
+    cocoapods()
+  end
   if options[:skip_slack] != true
     slack(
       message: "Starting framework CI",
