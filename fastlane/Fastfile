@@ -105,12 +105,6 @@ lane :travis_framework_after_success_action do |options|
   if ENV['TRAVIS'] == nil
     UI.user_error! "Only travis can run this lane"
   end
-  coverage(
-    workspace: options[:workspace],
-    project: options[:project],
-    scheme: options[:scheme],
-    skip_slack: options[:skip_slack]
-  )
   if git_branch() == "master"
     notification_payload = {
       "Git Branch" => ENV['TRAVIS_BRANCH'],
