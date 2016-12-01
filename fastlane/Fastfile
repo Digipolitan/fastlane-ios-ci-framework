@@ -40,7 +40,7 @@ lane :travis_framework_tests do |options|
       :project => {:env_var => "DG_PROJECT"}
     }
   )
-  if File.exist?("Podfile")
+  if files_matching(pattern: "Podfile") != nil
     cocoapods()
   end
   if options[:skip_slack] != true
