@@ -133,6 +133,7 @@ lane :travis_framework_after_success_action do |options|
         platform: "all",
         no_skip_current: true
       )
+      carthage(command: "archive")
     end
     if options[:github_repository_name] != nil
       framework_deploy_github(
