@@ -5,41 +5,80 @@ fastlane documentation
 sudo gem install fastlane
 ```
 # Available Actions
-### travis_framework_tests
+### ci_framework_begin
 ```
-fastlane travis_framework_tests
+fastlane ci_framework_begin
 ```
-Build and run all tests for the given environment
+Run this lane when the CI environment handle a new build
 
-####Example:
-
-```
-fastlane travis_framework_tests workspace:NAME.xcworkspace
-```
-
-####How to install ?
-
-This lane require the `tests` lane define in [Digipolitan/fastlane-ios-common](https://github.com/Digipolitan/fastlane-ios-common)
+#### Example:
 
 ```
-import_from_git(
-  url: 'https://github.com/Digipolitan/fastlane-ios-common'
-)
+fastlane ci_framework_begin product_name:DGFrameworkTemplate
 ```
 
-####Options
+#### Options
 
-* **workspace**: The workspace to use.
+* **product_name**: The framework name.
 
-  * **environment_variable**: DG_WORKSPACE
+  * **environment_variable**: DG_PRODUCT_NAME
 
   * **type**: string
 
   * **optional**: true
 
-* **name**: The framework name.
+* **project**: The project to use.
 
-  * **environment_variable**: DG_FRAMEWORK_NAME
+  * **environment_variable**: DG_PROJECT
+
+  * **type**: string
+
+  * **optional**: true
+
+* **skip_slack**: Skip slack notification even if a SLACK_URL is define.
+
+  * **type**: boolean
+
+  * **optional**: true
+
+  * **default_value**: false
+
+#### Environment variables
+
+* **SLACK_URL**: The slack Hook URL
+
+  * **type**: string
+
+  * **optional**: true
+
+
+### ci_framework_tests
+```
+fastlane ci_framework_tests
+```
+Build and run all tests in the CI environment
+
+#### Example:
+
+```
+fastlane ci_framework_tests workspace:NAME.xcworkspace
+```
+
+#### How to install ?
+
+This lane require actions define in [Digipolitan/fastlane-common](https://github.com/Digipolitan/fastlane-common)
+
+```
+import_from_git(
+  url: 'https://github.com/Digipolitan/fastlane-common'
+)
+```
+
+#### Options
+
+* **workspace**: The workspace to use.
+
+  * **environment_variable**: DG_WORKSPACE
 
   * **type**: string
 
@@ -69,7 +108,7 @@ import_from_git(
 
   * **default_value**: false
 
-####Environment variables
+#### Environment variables
 
 * **SLACK_URL**: The slack Hook URL
 
@@ -78,33 +117,21 @@ import_from_git(
   * **optional**: true
 
 
-### travis_framework_after_success_action
+### ci_framework_deploy
 ```
-fastlane travis_framework_after_success_action
+fastlane ci_framework_deploy
 ```
-Travis after success lane, the action depend of the current git branch
+CI deployment lane, do something only on a master branch
 
-For all branches run **code coverage** and submit stat to slack
+Deploy to **github**, **carthage** and **cocoapods**
 
-After that only for the **master branch**, deploy framework to **github** and **cocoapods**
+#### How to install ?
 
-####How to install ?
-
-This lane require the `coverage` lane define in [Digipolitan/fastlane-ios-common](https://github.com/Digipolitan/fastlane-ios-common)
-
-```
-import_from_git(
-  url: 'https://github.com/Digipolitan/fastlane-ios-common'
-)
-```
-
-This lane require :
+This lane require actions or lanes define in [Digipolitan/fastlane-ios-framework](https://github.com/Digipolitan/fastlane-ios-framework)
 
 - `framework_deploy_github` lane **if github_repository_name != nil**
 
 - `framework_deploy_cocoapods` lane **if skip_cocoapods != true**
-
-Define in [Digipolitan/fastlane-ios-framework](https://github.com/Digipolitan/fastlane-ios-framework)
 
 ```
 import_from_git(
@@ -112,7 +139,7 @@ import_from_git(
 )
 ```
 
-####Options
+#### Options
 
 * **github_repository_name**: The GitHub repository name such as 'company/project'
 
@@ -146,6 +173,14 @@ import_from_git(
 
   * **optional**: true
 
+* **product_name**: The framework name.
+
+  * **environment_variable**: DG_PRODUCT_NAME
+
+  * **type**: string
+
+  * **optional**: true
+
 * **skip_slack**: Skip slack notification even if a SLACK_URL is define.
 
   * **type**: boolean
@@ -170,7 +205,7 @@ import_from_git(
 
   * **default_value**: false
 
-####Environment variables
+#### Environment variables
 
 * **SLACK_URL**: The slack Hook URL
 
