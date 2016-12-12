@@ -1,7 +1,7 @@
-Digipolitan Fastlane iOS Travis framework
+Digipolitan fastlane-ios-ci-framework
 ================
 
-Create Travis CI lanes for iOS framework used by Digipolitan repositories
+Create CI lanes for iOS framework used by Digipolitan repositories
 
 ## Installation
 To install fastlane, simply use gem:
