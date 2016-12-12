@@ -10,10 +10,6 @@ desc "* **project**: The project to use."
 desc "  * **environment_variable**: DG_PROJECT"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc "* **skip_slack**: Skip slack notification even if a SLACK_URL is define."
-desc "  * **type**: boolean"
-desc "  * **optional**: true"
-desc "  * **default_value**: false"
 desc "#### Environment variables"
 desc "* **SLACK_URL**: The slack Hook URL"
 desc "  * **type**: string"
@@ -23,22 +19,22 @@ lane :ci_framework_begin do |options|
   if ENV['CI'] == nil
     UI.user_error! "Only a CI environment can run this lane"
   end
-  prepare_lane_options(
-    options: options,
-    mapping: {
-      :project => {:env_var => "DG_PROJECT"},
-      :product_name => {:env_var => "DG_PRODUCT_NAME"}
-    }
-  )
-  if options[:skip_slack] != true
-    notification_payload = {
-      "Git Branch" => git_branch(),
-      "Version" => get_version_number(xcodeproj: options[:project]),
-      "Platform" => "iOS"
-    }
+  branch = git_branch()
+  if branch == "master"
+    prepare_lane_options(
+      options: options,
+      mapping: {
+        :project => {:env_var => "DG_PROJECT"},
+        :product_name => {:env_var => "DG_PRODUCT_NAME"}
+      }
+    )
+    notification_payload = {}
     if options[:product_name] != nil
       notification_payload["Framework"] = options[:product_name]
     end
+    notification_payload["Platform"] = "iOS"
+    notification_payload["Version"] = get_version_number(xcodeproj: options[:project])
+    notification_payload["Git Branch"] = branch
     slack(
       message: "Starting Framework CI",
       payload: notification_payload,
@@ -66,10 +62,6 @@ desc "* **scheme**: The scheme into the workspace to execute."
 desc "  * **environment_variable**: DG_SCHEME"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc "* **skip_slack**: Skip slack notification even if a SLACK_URL is define."
-desc "  * **type**: boolean"
-desc "  * **optional**: true"
-desc "  * **default_value**: false"
 desc "#### Environment variables"
 desc "* **SLACK_URL**: The slack Hook URL"
 desc "  * **type**: string"
@@ -94,7 +86,7 @@ lane :ci_framework_tests do |options|
     workspace: options[:workspace],
     project: options[:project],
     scheme: options[:scheme],
-    skip_slack: options[:skip_slack],
+    slack_only_on_failure: (git_branch() != "master"),
     clean: true
   )
 end
@@ -127,10 +119,6 @@ desc "* **product_name**: The framework name."
 desc "  * **environment_variable**: DG_PRODUCT_NAME"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc "* **skip_slack**: Skip slack notification even if a SLACK_URL is define."
-desc "  * **type**: boolean"
-desc "  * **optional**: true"
-desc "  * **default_value**: false"
 desc "* **skip_cocoapods**: Skip cocoapods deployment"
 desc "  * **type**: boolean"
 desc "  * **optional**: true"
@@ -160,11 +148,13 @@ lane :ci_framework_deploy do |options|
         :product_name => {:env_var => "DG_PRODUCT_NAME"}
       }
     )
-    notification_payload = {
-      "Git Branch" => branch,
-      "Version" => get_version_number(xcodeproj: options[:project]),
-      "Platform" => "iOS"
-    }
+    notification_payload = {}
+    if options[:product_name] != nil
+      notification_payload["Framework"] = options[:product_name]
+    end
+    notification_payload["Platform"] = "iOS"
+    notification_payload["Version"] = get_version_number(xcodeproj: options[:project])
+    notification_payload["Git Branch"] = branch
     if options[:skip_carthage] != true
       carthage(
         command: "build",
@@ -186,14 +176,11 @@ lane :ci_framework_deploy do |options|
       framework_deploy_cocoapods(podspec_path: options[:podspec_path])
       notification_payload["CocoaPods"] = lane_context[:DG_COCOAPODS_RELEASE_LINK]
     end
-
-    if options[:skip_slack] != true
-      slack(
-        message: "Successfully distributed framework CI",
-        payload: notification_payload,
-        default_payloads: []
-      )
-    end
+    slack(
+      message: "Successfully distributed framework CI",
+      payload: notification_payload,
+      default_payloads: []
+    )
   else
     UI.message "Nothing to deploy on branch '#{branch}', deploy only on the master branch"
   end
