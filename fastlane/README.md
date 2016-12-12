@@ -5,31 +5,70 @@ fastlane documentation
 sudo gem install fastlane
 ```
 # Available Actions
-### travis_framework_tests
+### ci_framework_begin
 ```
-fastlane travis_framework_tests
+fastlane ci_framework_begin
 ```
-Build and run all tests for the given environment
+Run this lane when the CI environment handle a new build
 
-####Example:
+#### Example:
 
 ```
-fastlane travis_framework_tests workspace:NAME.xcworkspace
+fastlane ci_framework_begin product_name:DGFrameworkTemplate
 ```
 
-####How to install ?
+#### Options
 
-This lane require the `tests` lane define in [Digipolitan/fastlane-ios-common](https://github.com/Digipolitan/fastlane-ios-common)
+* **product_name**: The framework name.
+
+  * **environment_variable**: DG_PRODUCT_NAME
+
+  * **type**: string
+
+  * **optional**: true
+
+* **project**: The project to use.
+
+  * **environment_variable**: DG_PROJECT
+
+  * **type**: string
+
+  * **optional**: true
+
+#### Environment variables
+
+* **SLACK_URL**: The slack Hook URL
+
+  * **type**: string
+
+  * **optional**: true
+
+
+### ci_framework_tests
+```
+fastlane ci_framework_tests
+```
+Build and run all tests in the CI environment
+
+#### Example:
+
+```
+fastlane ci_framework_tests workspace:NAME.xcworkspace
+```
+
+#### How to install ?
+
+This lane require actions define in [Digipolitan/fastlane-common](https://github.com/Digipolitan/fastlane-common)
 
 ```
 import_from_git(
-  url: 'https://github.com/Digipolitan/fastlane-ios-common'
+  url: 'https://github.com/Digipolitan/fastlane-common'
 )
 ```
 
-####Options
+#### Options
 
- * **workspace**: The workspace to use.
+* **workspace**: The workspace to use.
 
   * **environment_variable**: DG_WORKSPACE
 
@@ -37,7 +76,7 @@ import_from_git(
 
   * **optional**: true
 
- * **project**: The project to use.
+* **project**: The project to use.
 
   * **environment_variable**: DG_PROJECT
 
@@ -53,46 +92,48 @@ import_from_git(
 
   * **optional**: true
 
-* **skip_slack**: Skip slack notification even if a SLACK_URL is define.
+#### Environment variables
 
-  * **type**: boolean
-
-  * **optional**: true
-
-  * **default_value**: false
-
-
-### travis_framework_after_success_action
-```
-fastlane travis_framework_after_success_action
-```
-Travis after success lane, the action depend of the current git branch
-
-For all branches run **code coverage** and submit stat to slack
-
-After that only for the **master branch**, deploy framework to **github** and **cocoapods**
-
-####How to install ?
-
-This lane require the `coverage` lane define in [Digipolitan/fastlane-ios-common](https://github.com/Digipolitan/fastlane-ios-common)
-
-```
-import_from_git(
-  url: 'https://github.com/Digipolitan/fastlane-ios-common'
-)
-```
-
-####Options
-
-* **github_repository_name**: The github repository name such as 'company/project'
-
-  * **environment_variable**: GITHUB_REPOSITORY_NAME
+* **SLACK_URL**: The slack Hook URL
 
   * **type**: string
 
   * **optional**: true
 
- * **workspace**: The workspace to use.
+
+### ci_framework_deploy
+```
+fastlane ci_framework_deploy
+```
+CI deployment lane, do something only on a master branch
+
+Deploy to **github**, **carthage** and **cocoapods**
+
+#### How to install ?
+
+This lane require actions or lanes define in [Digipolitan/fastlane-ios-framework](https://github.com/Digipolitan/fastlane-ios-framework)
+
+- `framework_deploy_github` lane **if github_repository_name != nil**
+
+- `framework_deploy_cocoapods` lane **if skip_cocoapods != true**
+
+```
+import_from_git(
+  url: 'https://github.com/Digipolitan/fastlane-ios-framework'
+)
+```
+
+#### Options
+
+* **github_repository_name**: The GitHub repository name such as 'company/project'
+
+  * **environment_variable**: DG_GITHUB_REPOSITORY_NAME
+
+  * **type**: string
+
+  * **optional**: true
+
+* **workspace**: The workspace to use.
 
   * **environment_variable**: DG_WORKSPACE
 
@@ -100,7 +141,7 @@ import_from_git(
 
   * **optional**: true
 
- * **project**: The project to use.
+* **project**: The project to use.
 
   * **environment_variable**: DG_PROJECT
 
@@ -116,28 +157,9 @@ import_from_git(
 
   * **optional**: true
 
-* **skip_slack**: Skip slack notification even if a SLACK_URL is define.
+* **product_name**: The framework name.
 
-  * **type**: boolean
-
-  * **optional**: true
-
-  * **default_value**: false
-
-
-### travis_framework_deploy_github
-```
-fastlane travis_framework_deploy_github
-```
-Travis github deployment lane
-
-This lane must be run only on the **master** branch
-
-####Options
-
-* **github_repository_name**: The github repository name such as 'company/project'
-
-  * **environment_variable**: GITHUB_REPOSITORY_NAME
+  * **environment_variable**: DG_PRODUCT_NAME
 
   * **type**: string
 
@@ -151,43 +173,29 @@ This lane must be run only on the **master** branch
 
   * **default_value**: false
 
-####Environment variables
+* **skip_cocoapods**: Skip cocoapods deployment
 
-* **GITHUB_TOKEN**: The GitHub access token use to push the release to GitHub, check how to generate access token [here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/)
+  * **type**: boolean
+
+  * **optional**: true
+
+  * **default_value**: false
+
+* **skip_carthage**: Skip carthage deployment
+
+  * **type**: boolean
+
+  * **optional**: true
+
+  * **default_value**: false
+
+#### Environment variables
+
+* **SLACK_URL**: The slack Hook URL
 
   * **type**: string
 
-  * **optional**: false
-
-* **COCOAPODS_TRUNK_TOKEN**: The CocoaPods access token use to push the release to CocoaPods, check below to retrieve CocoaPods token
-
-  * **type**: string
-
-  * **optional**: false
-
-####How to pass environement variable to Travis
-
-Take a look to the Travis [documentation](https://docs.travis-ci.com/user/environment-variables/)
-
-####How to retrieve CocoaPods Trunk Token ?
-
-First setup your CocoaPods trunk [as follow](https://guides.cocoapods.org/making/getting-setup-with-trunk.html)
-
-After that run this command :
-
-```
-grep -A2 'trunk.cocoapods.org' ~/.netrc
-```
-
-The output sould be something like this :
-
-```
-machine trunk.cocoapods.org
-  login user@example.com
-  password XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-```
-
-The password 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' is your CocoaPods trunk token
+  * **optional**: true
 
 
 
