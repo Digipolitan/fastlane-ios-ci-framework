@@ -20,7 +20,7 @@ lane :ci_framework_begin do |options|
     UI.user_error! "Only a CI environment can run this lane"
   end
   branch = git_branch()
-  if branch == "master"
+  if branch == git_get_master_branch()
     prepare_lane_options(
       options: options,
       mapping: {
@@ -86,7 +86,7 @@ lane :ci_framework_tests do |options|
     workspace: options[:workspace],
     project: options[:project],
     scheme: options[:scheme],
-    slack_only_on_failure: (git_branch() != "master"),
+    slack_only_on_failure: (git_branch() != git_get_master_branch()),
     clean: true
   )
 end
@@ -137,7 +137,8 @@ lane :ci_framework_deploy do |options|
     UI.user_error! "Only a CI environment can run this lane"
   end
   branch = git_branch()
-  if branch == "master"
+  master_branch = git_get_master_branch()
+  if branch == master_branch
     prepare_lane_options(
       options: options,
       mapping: {
@@ -182,6 +183,6 @@ lane :ci_framework_deploy do |options|
       default_payloads: []
     )
   else
-    UI.message "Nothing to deploy on branch '#{branch}', deploy only on the master branch"
+    UI.message "Nothing to deploy on branch '#{branch}', deploy only on the #{master_branch} branch"
   end
 end
