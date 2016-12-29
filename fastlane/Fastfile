@@ -1,134 +1,44 @@
-desc "Run this lane when the CI environment handle a new build"
-desc "#### Example:"
-desc "```\nfastlane ci_framework_begin product_name:DGFrameworkTemplate\n```"
-desc "#### Options"
-desc "* **product_name**: The framework name."
-desc "  * **environment_variable**: DG_PRODUCT_NAME"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc "* **project**: The project to use."
-desc "  * **environment_variable**: DG_PROJECT"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc "#### Environment variables"
-desc "* **SLACK_URL**: The slack Hook URL"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc ""
-lane :ci_framework_begin do |options|
-  if ENV['CI'] == nil
-    UI.user_error! "Only a CI environment can run this lane"
-  end
-  branch = git_branch()
-  if branch == "master"
-    prepare_lane_options(
-      options: options,
-      mapping: {
-        :project => {:env_var => "DG_PROJECT"},
-        :product_name => {:env_var => "DG_PRODUCT_NAME"}
-      }
-    )
-    notification_payload = {}
-    if options[:product_name] != nil
-      notification_payload["Framework"] = options[:product_name]
-    end
-    notification_payload["Platform"] = "iOS"
-    notification_payload["Version"] = get_version_number(xcodeproj: options[:project])
-    notification_payload["Git Branch"] = branch
-    slack(
-      message: "Starting Framework CI",
-      payload: notification_payload,
-      default_payloads: [:git_author]
-    )
-  end
-end
-
-desc "Build and run all tests in the CI environment"
-desc "#### Example:"
-desc "```\nfastlane ci_framework_tests workspace:NAME.xcworkspace\n```"
-desc "#### How to install ?"
-desc "This lane require actions define in [Digipolitan/fastlane-common](https://github.com/Digipolitan/fastlane-common)"
-desc "```\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-common'\n)\n```"
-desc "#### Options"
-desc "* **workspace**: The workspace to use."
-desc "  * **environment_variable**: DG_WORKSPACE"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc "* **project**: The project to use."
-desc "  * **environment_variable**: DG_PROJECT"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc "* **scheme**: The scheme into the workspace to execute."
-desc "  * **environment_variable**: DG_SCHEME"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc "#### Environment variables"
-desc "* **SLACK_URL**: The slack Hook URL"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc ""
-lane :ci_framework_tests do |options|
-  if ENV['CI'] == nil
-    UI.user_error! "Only a CI environment can run this lane"
-  end
-  prepare_lane_options(
-    options: options,
-    mapping: {
-      :workspace => {:env_var => "DG_WORKSPACE"},
-      :project => {:env_var => "DG_PROJECT"},
-      :scheme => {:env_var => "DG_SCHEME"}
-    }
-  )
-  if files_matching(pattern: "Podfile") != nil
-    cocoapods()
-  end
-  scan(
-    workspace: options[:workspace],
-    project: options[:project],
-    scheme: options[:scheme],
-    slack_only_on_failure: (git_branch() != "master"),
-    clean: true
-  )
-end
-
-desc "CI deployment lane, do something only on a master branch"
+desc "Framework CI deployment lane, do something only on a master branch"
 desc "Deploy to **github**, **carthage** and **cocoapods**"
 desc "#### How to install ?"
 desc "This lane require actions or lanes define in [Digipolitan/fastlane-ios-framework](https://github.com/Digipolitan/fastlane-ios-framework)"
 desc "- `framework_deploy_github` lane **if github_repository_name != nil**"
 desc "- `framework_deploy_cocoapods` lane **if skip_cocoapods != true**"
-desc "```\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-ios-framework'\n)\n```"
+desc "```\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-common'\n)\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-ios'\n)\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-ios-framework'\n)\n```"
 desc "#### Options"
-desc "* **github_repository_name**: The GitHub repository name such as 'company/project'"
-desc "  * **environment_variable**: DG_GITHUB_REPOSITORY_NAME"
+desc "* __**xcodeproj**__: The Xcode project to select."
+desc "  * **environment_variable**: XCODEPROJ"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc "* **workspace**: The workspace to use."
-desc "  * **environment_variable**: DG_WORKSPACE"
+desc "* __**product_name**__: The framework name."
+desc "  * **environment_variable**: PRODUCT_NAME"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc "* **project**: The project to use."
-desc "  * **environment_variable**: DG_PROJECT"
+desc "* __**github_token**__: The GitHub access token use to push the release to GitHub, check how to generate access token [here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/)"
+desc "  * **environment_variable**: GITHUB_TOKEN"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc "* **scheme**: The scheme into the workspace to execute."
-desc "  * **environment_variable**: DG_SCHEME"
+desc "* __**github_repository_name**__: The GitHub repository name such as 'company/project'"
+desc "  * **environment_variable**: GITHUB_REPOSITORY_NAME"
 desc "  * **type**: string"
 desc "  * **optional**: true"
-desc "* **product_name**: The framework name."
-desc "  * **environment_variable**: DG_PRODUCT_NAME"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc "* **skip_cocoapods**: Skip cocoapods deployment"
+desc "* __**skip_cocoapods**__: Skip cocoapods deployment"
+desc "  * **environment_variable**: SKIP_COCOAPODS"
 desc "  * **type**: boolean"
-desc "  * **optional**: true"
 desc "  * **default_value**: false"
-desc "* **skip_carthage**: Skip carthage deployment"
+desc "* __**skip_carthage**__: Skip carthage deployment"
+desc "  * **environment_variable**: SKIP_CARTHAGE"
 desc "  * **type**: boolean"
-desc "  * **optional**: true"
+desc "  * **default_value**: false"
+desc "* __**skip_codecov**__: Skip the codecov.io link"
+desc "  * **environment_variable**: SKIP_CODECOV"
+desc "  * **type**: boolean"
 desc "  * **default_value**: false"
 desc "#### Environment variables"
-desc "* **SLACK_URL**: The slack Hook URL"
+desc "* __**SLACK_URL**__: The Slack Hook URL"
+desc "  * **type**: string"
+desc "  * **optional**: true"
+desc "* __**COCOAPODS_TRUNK_TOKEN**__: The CocoaPods access token use to push the release to CocoaPods"
 desc "  * **type**: string"
 desc "  * **optional**: true"
 desc ""
@@ -137,23 +47,26 @@ lane :ci_framework_deploy do |options|
     UI.user_error! "Only a CI environment can run this lane"
   end
   branch = git_branch()
-  if branch == "master"
+  master_branch = git_get_master_branch()
+  if branch == master_branch
     prepare_lane_options(
       options: options,
-      mapping: {
-        :github_repository_name => {:env_var => "GITHUB_REPOSITORY_NAME"},
-        :github_token => {:env_var => "GITHUB_TOKEN"},
-        :podspec_path => {:env_var => "DG_PODSPEC_PATH"},
-        :project => {:env_var => "DG_PROJECT"},
-        :product_name => {:env_var => "DG_PRODUCT_NAME"}
-      }
+      bind_params: [
+        Actions::BindParamBuilder.new(:xcodeproj).env_var("XCODEPROJ").build(),
+        Actions::BindParamBuilder.new(:github_token).env_var("GITHUB_TOKEN").build(),
+        Actions::BindParamBuilder.new(:github_repository_name).env_var("GITHUB_REPOSITORY_NAME").build(),
+        Actions::BindParamBuilder.new(:podspec_path).env_var("PODSPEC_PATH").build(),
+        Actions::BindParamBuilder.new(:product_name).env_var("PRODUCT_NAME").build(),
+        Actions::BindParamBuilder.new(:skip_cocoapods).env_var("SKIP_COCOAPODS").default_value(false).build(),
+        Actions::BindParamBuilder.new(:skip_carthage).env_var("SKIP_CARTHAGE").default_value(false).build(),
+        Actions::BindParamBuilder.new(:skip_codecov).env_var("SKIP_CODECOV").default_value(false).build()
+      ]
     )
     notification_payload = {}
-    if options[:product_name] != nil
-      notification_payload["Framework"] = options[:product_name]
-    end
+    project_info = get_project_info(xcodeproj: options[:xcodeproj])
+    notification_payload["Framework"] = options[:product_name] != nil ? options[:product_name] : project_info[:name]
     notification_payload["Platform"] = "iOS"
-    notification_payload["Version"] = get_version_number(xcodeproj: options[:project])
+    notification_payload["Version"] = get_version_number(xcodeproj: project_info[:xcodeproj])
     notification_payload["Git Branch"] = branch
     if options[:skip_carthage] != true
       carthage(
@@ -165,16 +78,17 @@ lane :ci_framework_deploy do |options|
     end
     if options[:github_repository_name] != nil
       framework_deploy_github(
-        token: options[:github_token],
-        repository_name: options[:github_repository_name],
-        project: options[:project],
-        skip_carthage: options[:skip_carthage]
+        github_token: options[:github_token],
+        github_repository_name: options[:github_repository_name],
+        xcodeproj: project_info[:xcodeproj],
+        skip_carthage: options[:skip_carthage],
+        skip_codecov: options[:skip_codecov]
       )
-      notification_payload["GitHub Release"] = lane_context[:SET_GITHUB_RELEASE_HTML_LINK]
+      notification_payload["GitHub Release"] = Actions.lane_context[SharedValues::SET_GITHUB_RELEASE_HTML_LINK]
     end
     if options[:skip_cocoapods] != true
       framework_deploy_cocoapods(podspec_path: options[:podspec_path])
-      notification_payload["CocoaPods"] = lane_context[:DG_COCOAPODS_RELEASE_LINK]
+      notification_payload["CocoaPods"] = lane_context[:COCOAPODS_RELEASE_LINK]
     end
     slack(
       message: "Successfully distributed framework CI",
@@ -182,6 +96,6 @@ lane :ci_framework_deploy do |options|
       default_payloads: []
     )
   else
-    UI.message "Nothing to deploy on branch '#{branch}', deploy only on the master branch"
+    UI.message "Nothing to deploy on branch '#{branch}', deploy only on the #{master_branch} branch"
   end
 end

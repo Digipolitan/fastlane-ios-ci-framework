@@ -5,45 +5,6 @@ fastlane documentation
 sudo gem install fastlane
 ```
 # Available Actions
-### ci_framework_begin
-```
-fastlane ci_framework_begin
-```
-Run this lane when the CI environment handle a new build
-
-#### Example:
-
-```
-fastlane ci_framework_begin product_name:DGFrameworkTemplate
-```
-
-#### Options
-
-* **product_name**: The framework name.
-
-  * **environment_variable**: DG_PRODUCT_NAME
-
-  * **type**: string
-
-  * **optional**: true
-
-* **project**: The project to use.
-
-  * **environment_variable**: DG_PROJECT
-
-  * **type**: string
-
-  * **optional**: true
-
-#### Environment variables
-
-* **SLACK_URL**: The slack Hook URL
-
-  * **type**: string
-
-  * **optional**: true
-
-
 ### ci_framework_tests
 ```
 fastlane ci_framework_tests
@@ -68,25 +29,25 @@ import_from_git(
 
 #### Options
 
-* **workspace**: The workspace to use.
+* __**test_scheme**__: The scheme into the Xcode project to execute, the scheme is required on the CI environement
 
-  * **environment_variable**: DG_WORKSPACE
+  * **environment_variable**: TEST_SCHEME
+
+  * **type**: string
+
+  * **optional**: false
+
+* __**xcworkspace**__: The workspace to use.
+
+  * **environment_variable**: XCWORKSPACE
 
   * **type**: string
 
   * **optional**: true
 
-* **project**: The project to use.
+* __**xcodeproj**__: The Xcode project to select
 
-  * **environment_variable**: DG_PROJECT
-
-  * **type**: string
-
-  * **optional**: true
-
-* **scheme**: The scheme into the workspace to execute.
-
-  * **environment_variable**: DG_SCHEME
+  * **environment_variable**: XCODEPROJ
 
   * **type**: string
 
@@ -94,7 +55,7 @@ import_from_git(
 
 #### Environment variables
 
-* **SLACK_URL**: The slack Hook URL
+* __**SLACK_URL**__: The slack Hook URL
 
   * **type**: string
 
@@ -105,7 +66,7 @@ import_from_git(
 ```
 fastlane ci_framework_deploy
 ```
-CI deployment lane, do something only on a master branch
+Framework CI deployment lane, do something only on a master branch
 
 Deploy to **github**, **carthage** and **cocoapods**
 
@@ -119,79 +80,77 @@ This lane require actions or lanes define in [Digipolitan/fastlane-ios-framework
 
 ```
 import_from_git(
+  url: 'https://github.com/Digipolitan/fastlane-common'
+)
+import_from_git(
+  url: 'https://github.com/Digipolitan/fastlane-ios'
+)
+import_from_git(
   url: 'https://github.com/Digipolitan/fastlane-ios-framework'
 )
 ```
 
 #### Options
 
-* **github_repository_name**: The GitHub repository name such as 'company/project'
+* __**xcodeproj**__: The Xcode project to select.
 
-  * **environment_variable**: DG_GITHUB_REPOSITORY_NAME
-
-  * **type**: string
-
-  * **optional**: true
-
-* **workspace**: The workspace to use.
-
-  * **environment_variable**: DG_WORKSPACE
+  * **environment_variable**: XCODEPROJ
 
   * **type**: string
 
   * **optional**: true
 
-* **project**: The project to use.
+* __**product_name**__: The framework name.
 
-  * **environment_variable**: DG_PROJECT
-
-  * **type**: string
-
-  * **optional**: true
-
-* **scheme**: The scheme into the workspace to execute.
-
-  * **environment_variable**: DG_SCHEME
+  * **environment_variable**: PRODUCT_NAME
 
   * **type**: string
 
   * **optional**: true
 
-* **product_name**: The framework name.
+* __**github_token**__: The GitHub access token use to push the release to GitHub, check how to generate access token [here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/)
 
-  * **environment_variable**: DG_PRODUCT_NAME
+  * **environment_variable**: GITHUB_TOKEN
 
   * **type**: string
 
   * **optional**: true
 
-* **skip_slack**: Skip slack notification even if a SLACK_URL is define.
+* __**github_repository_name**__: The GitHub repository name such as 'company/project'
+
+  * **environment_variable**: GITHUB_REPOSITORY_NAME
+
+  * **type**: string
+
+  * **optional**: true
+
+* __**skip_cocoapods**__: Skip cocoapods deployment
 
   * **type**: boolean
-
-  * **optional**: true
 
   * **default_value**: false
 
-* **skip_cocoapods**: Skip cocoapods deployment
+* __**skip_carthage**__: Skip carthage deployment
 
   * **type**: boolean
-
-  * **optional**: true
 
   * **default_value**: false
 
-* **skip_carthage**: Skip carthage deployment
+* __**skip_codecov**__: Skip the codecov.io link
 
   * **type**: boolean
-
-  * **optional**: true
 
   * **default_value**: false
 
 #### Environment variables
 
 * **SLACK_URL**: The slack Hook URL
+
+  * **type**: string
+
+  * **optional**: true
+
+* __**COCOAPODS_TRUNK_TOKEN**__: The CocoaPods access token use to push the release to CocoaPods
 
   * **type**: string
 
