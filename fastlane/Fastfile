@@ -1,51 +1,3 @@
-desc "Build and run all tests in the CI environment"
-desc "#### Example:"
-desc "```\nfastlane ci_framework_tests workspace:NAME.xcworkspace\n```"
-desc "#### How to install ?"
-desc "This lane require actions define in [Digipolitan/fastlane-common](https://github.com/Digipolitan/fastlane-common)"
-desc "```\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-common'\n)\n```"
-desc "#### Options"
-desc "* __**test_scheme**__: The scheme into the Xcode project to execute, the scheme is required on the CI environement"
-desc "  * **environment_variable**: TEST_SCHEME"
-desc "  * **type**: string"
-desc "  * **optional**: false"
-desc "* __**xcworkspace**__: The workspace to use."
-desc "  * **environment_variable**: XCWORKSPACE"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc "* __**xcodeproj**__: The Xcode project to select"
-desc "  * **environment_variable**: XCODEPROJ"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc "#### Environment variables"
-desc "* __**SLACK_URL**__: The slack Hook URL"
-desc "  * **type**: string"
-desc "  * **optional**: true"
-desc ""
-lane :ci_framework_tests do |options|
-  if ENV['CI'] == nil
-    UI.user_error! "Only a CI environment can run this lane"
-  end
-  prepare_lane_options(
-    options: options,
-    bind_params: [
-      Actions::BindParamBuilder.new(:test_scheme).env_var("TEST_SCHEME").required().build(),
-      Actions::BindParamBuilder.new(:xcworkspace).env_var("XCWORKSPACE").build(),
-      Actions::BindParamBuilder.new(:xcodeproj).env_var("XCODEPROJ").build()
-    ]
-  )
-  if files_matching(pattern: "Podfile") != nil
-    cocoapods()
-  end
-  scan(
-    workspace: options[:xcworkspace],
-    project: options[:xcodeproj],
-    scheme: options[:test_scheme],
-    slack_only_on_failure: (git_branch() != git_get_master_branch()),
-    clean: true
-  )
-end
-
 desc "Framework CI deployment lane, do something only on a master branch"
 desc "Deploy to **github**, **carthage** and **cocoapods**"
 desc "#### How to install ?"
@@ -71,16 +23,19 @@ desc "  * **environment_variable**: GITHUB_REPOSITORY_NAME"
 desc "  * **type**: string"
 desc "  * **optional**: true"
 desc "* __**skip_cocoapods**__: Skip cocoapods deployment"
+desc "  * **environment_variable**: SKIP_COCOAPODS"
 desc "  * **type**: boolean"
 desc "  * **default_value**: false"
 desc "* __**skip_carthage**__: Skip carthage deployment"
+desc "  * **environment_variable**: SKIP_CARTHAGE"
 desc "  * **type**: boolean"
 desc "  * **default_value**: false"
 desc "* __**skip_codecov**__: Skip the codecov.io link"
+desc "  * **environment_variable**: SKIP_CODECOV"
 desc "  * **type**: boolean"
 desc "  * **default_value**: false"
 desc "#### Environment variables"
-desc "* **SLACK_URL**: The slack Hook URL"
+desc "* __**SLACK_URL**__: The Slack Hook URL"
 desc "  * **type**: string"
 desc "  * **optional**: true"
 desc "* __**COCOAPODS_TRUNK_TOKEN**__: The CocoaPods access token use to push the release to CocoaPods"
@@ -102,17 +57,16 @@ lane :ci_framework_deploy do |options|
         Actions::BindParamBuilder.new(:github_repository_name).env_var("GITHUB_REPOSITORY_NAME").build(),
         Actions::BindParamBuilder.new(:podspec_path).env_var("PODSPEC_PATH").build(),
         Actions::BindParamBuilder.new(:product_name).env_var("PRODUCT_NAME").build(),
-        Actions::BindParamBuilder.new(:skip_cocoapods).default_value(false).build(),
-        Actions::BindParamBuilder.new(:skip_carthage).default_value(false).build(),
-        Actions::BindParamBuilder.new(:skip_codecov).default_value(false).build()
+        Actions::BindParamBuilder.new(:skip_cocoapods).env_var("SKIP_COCOAPODS").default_value(false).build(),
+        Actions::BindParamBuilder.new(:skip_carthage).env_var("SKIP_CARTHAGE").default_value(false).build(),
+        Actions::BindParamBuilder.new(:skip_codecov).env_var("SKIP_CODECOV").default_value(false).build()
       ]
     )
     notification_payload = {}
-    if options[:product_name] != nil
-      notification_payload["Framework"] = options[:product_name]
-    end
+    project_info = get_project_info(xcodeproj: options[:xcodeproj])
+    notification_payload["Framework"] = options[:product_name] != nil ? options[:product_name] : project_info[:name]
     notification_payload["Platform"] = "iOS"
-    notification_payload["Version"] = get_version_number(xcodeproj: options[:xcodeproj])
+    notification_payload["Version"] = get_version_number(xcodeproj: project_info[:xcodeproj])
     notification_payload["Git Branch"] = branch
     if options[:skip_carthage] != true
       carthage(
@@ -126,7 +80,7 @@ lane :ci_framework_deploy do |options|
       framework_deploy_github(
         github_token: options[:github_token],
         github_repository_name: options[:github_repository_name],
-        xcodeproj: options[:xcodeproj],
+        xcodeproj: project_info[:xcodeproj],
         skip_carthage: options[:skip_carthage],
         skip_codecov: options[:skip_codecov]
       )
