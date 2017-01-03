@@ -57,9 +57,9 @@ lane :ci_framework_deploy do |options|
         Actions::BindParamBuilder.new(:github_repository_name).env_var("GITHUB_REPOSITORY_NAME").build(),
         Actions::BindParamBuilder.new(:podspec_path).env_var("PODSPEC_PATH").build(),
         Actions::BindParamBuilder.new(:product_name).env_var("PRODUCT_NAME").build(),
-        Actions::BindParamBuilder.new(:skip_cocoapods).env_var("SKIP_COCOAPODS").transform(BindParamTransform::Boolean).default_value(false).build(),
-        Actions::BindParamBuilder.new(:skip_carthage).env_var("SKIP_CARTHAGE").transform(BindParamTransform::Boolean).default_value(false).build(),
-        Actions::BindParamBuilder.new(:skip_codecov).env_var("SKIP_CODECOV").transform(BindParamTransform::Boolean).default_value(false).build()
+        Actions::BindParamBuilder.new(:skip_cocoapods).env_var("SKIP_COCOAPODS").transform(Actions::BindParamTransform::Boolean).default_value(false).build(),
+        Actions::BindParamBuilder.new(:skip_carthage).env_var("SKIP_CARTHAGE").transform(Actions::BindParamTransform::Boolean).default_value(false).build(),
+        Actions::BindParamBuilder.new(:skip_codecov).env_var("SKIP_CODECOV").transform(Actions::BindParamTransform::Boolean).default_value(false).build()
       ]
     )
     notification_payload = {}
