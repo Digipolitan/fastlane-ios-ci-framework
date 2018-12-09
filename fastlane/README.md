@@ -1,67 +1,20 @@
 fastlane documentation
 ================
 # Installation
+
+Make sure you have the latest version of the Xcode command line tools installed:
+
 ```
-sudo gem install fastlane
+xcode-select --install
 ```
+
+Install _fastlane_ using
+```
+[sudo] gem install fastlane -NV
+```
+or alternatively using `brew cask install fastlane`
+
 # Available Actions
-### ci_framework_tests
-```
-fastlane ci_framework_tests
-```
-Build and run all tests in the CI environment
-
-#### Example:
-
-```
-fastlane ci_framework_tests workspace:NAME.xcworkspace
-```
-
-#### How to install ?
-
-This lane require actions define in [Digipolitan/fastlane-common](https://github.com/Digipolitan/fastlane-common)
-
-```
-import_from_git(
-  url: 'https://github.com/Digipolitan/fastlane-common'
-)
-```
-
-#### Options
-
-* __**test_scheme**__: The scheme into the Xcode project to execute, the scheme is required on the CI environement
-
-  * **environment_variable**: TEST_SCHEME
-
-  * **type**: string
-
-  * **optional**: false
-
-* __**xcworkspace**__: The workspace to use.
-
-  * **environment_variable**: XCWORKSPACE
-
-  * **type**: string
-
-  * **optional**: true
-
-* __**xcodeproj**__: The Xcode project to select
-
-  * **environment_variable**: XCODEPROJ
-
-  * **type**: string
-
-  * **optional**: true
-
-#### Environment variables
-
-* __**SLACK_URL**__: The slack Hook URL
-
-  * **type**: string
-
-  * **optional**: true
-
-
 ### ci_framework_deploy
 ```
 fastlane ci_framework_deploy
@@ -91,6 +44,14 @@ import_from_git(
 ```
 
 #### Options
+
+* __**target_scheme**__: The scheme into the Xcode project to execute, the scheme is required on the CI environement
+
+  * **environment_variable**: TARGET_SCHEME
+
+  * **type**: string
+
+  * **optional**: false on CI
 
 * __**xcodeproj**__: The Xcode project to select.
 
@@ -126,11 +87,15 @@ import_from_git(
 
 * __**skip_cocoapods**__: Skip cocoapods deployment
 
+  * **environment_variable**: SKIP_COCOAPODS
+
   * **type**: boolean
 
   * **default_value**: false
 
 * __**skip_carthage**__: Skip carthage deployment
+
+  * **environment_variable**: SKIP_CARTHAGE
 
   * **type**: boolean
 
@@ -138,13 +103,15 @@ import_from_git(
 
 * __**skip_codecov**__: Skip the codecov.io link
 
+  * **environment_variable**: SKIP_CODECOV
+
   * **type**: boolean
 
   * **default_value**: false
 
 #### Environment variables
 
-* **SLACK_URL**: The slack Hook URL
+* __**SLACK_URL**__: The Slack Hook URL
 
   * **type**: string
 
@@ -161,5 +128,5 @@ import_from_git(
 ----
 
 This README.md is auto-generated and will be re-generated every time [fastlane](https://fastlane.tools) is run.
-More information about fastlane can be found on [https://fastlane.tools](https://fastlane.tools).
-The documentation of fastlane can be found on [GitHub](https://github.com/fastlane/fastlane/tree/master/fastlane).
+More information about fastlane can be found on [fastlane.tools](https://fastlane.tools).
+The documentation of fastlane can be found on [docs.fastlane.tools](https://docs.fastlane.tools).

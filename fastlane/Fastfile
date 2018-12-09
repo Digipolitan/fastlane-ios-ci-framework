@@ -6,6 +6,10 @@ desc "- `framework_deploy_github` lane **if github_repository_name != nil**"
 desc "- `framework_deploy_cocoapods` lane **if skip_cocoapods != true**"
 desc "```\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-common'\n)\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-ios'\n)\nimport_from_git(\n  url: 'https://github.com/Digipolitan/fastlane-ios-framework'\n)\n```"
 desc "#### Options"
+desc "* __**target_scheme**__: The scheme into the Xcode project to execute, the scheme is required on the CI environement"
+desc "  * **environment_variable**: TARGET_SCHEME"
+desc "  * **type**: string"
+desc "  * **optional**: false on CI"
 desc "* __**xcodeproj**__: The Xcode project to select."
 desc "  * **environment_variable**: XCODEPROJ"
 desc "  * **type**: string"
@@ -52,21 +56,22 @@ lane :ci_framework_deploy do |options|
     prepare_lane_options(
       options: options,
       bind_params: [
+        Actions::BindParamBuilder.new(:target_scheme).env_var("TARGET_SCHEME").ci_required().build(),
         Actions::BindParamBuilder.new(:xcodeproj).env_var("XCODEPROJ").build(),
         Actions::BindParamBuilder.new(:github_token).env_var("GITHUB_TOKEN").build(),
         Actions::BindParamBuilder.new(:github_repository_name).env_var("GITHUB_REPOSITORY_NAME").build(),
         Actions::BindParamBuilder.new(:podspec_path).env_var("PODSPEC_PATH").build(),
         Actions::BindParamBuilder.new(:product_name).env_var("PRODUCT_NAME").build(),
-        Actions::BindParamBuilder.new(:skip_cocoapods).env_var("SKIP_COCOAPODS").default_value(false).build(),
-        Actions::BindParamBuilder.new(:skip_carthage).env_var("SKIP_CARTHAGE").default_value(false).build(),
-        Actions::BindParamBuilder.new(:skip_codecov).env_var("SKIP_CODECOV").default_value(false).build()
+        Actions::BindParamBuilder.new(:skip_cocoapods).env_var("SKIP_COCOAPODS").transform(Actions::BindParamTransform::Boolean).default_value(false).build(),
+        Actions::BindParamBuilder.new(:skip_carthage).env_var("SKIP_CARTHAGE").transform(Actions::BindParamTransform::Boolean).default_value(false).build(),
+        Actions::BindParamBuilder.new(:skip_codecov).env_var("SKIP_CODECOV").transform(Actions::BindParamTransform::Boolean).default_value(false).build()
       ]
     )
     notification_payload = {}
     project_info = get_project_info(xcodeproj: options[:xcodeproj])
     notification_payload["Framework"] = options[:product_name] != nil ? options[:product_name] : project_info[:name]
     notification_payload["Platform"] = "iOS"
-    notification_payload["Version"] = get_version_number(xcodeproj: project_info[:xcodeproj])
+    notification_payload["Version"] = get_version_number(xcodeproj: project_info[:xcodeproj], target: options[:target_scheme])
     notification_payload["Git Branch"] = branch
     if options[:skip_carthage] != true
       carthage(
@@ -81,6 +86,7 @@ lane :ci_framework_deploy do |options|
         github_token: options[:github_token],
         github_repository_name: options[:github_repository_name],
         xcodeproj: project_info[:xcodeproj],
+        target_scheme: options[:target_scheme],
         skip_carthage: options[:skip_carthage],
         skip_codecov: options[:skip_codecov]
       )
