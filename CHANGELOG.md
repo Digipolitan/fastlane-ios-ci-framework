@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.4.0](https://github.com/Digipolitan/fastlane-ios-ci-framework/releases/tag/v0.4.0)
+
+Fix some bug & add TARGET_SCHEME
+
+---
+
 ## [0.3.0](https://github.com/Digipolitan/fastlane-ios-ci-framework/releases/tag/v0.3.0)
 
 Remove lanes :
